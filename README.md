@@ -3,10 +3,36 @@ Cluster administrators can leverage limit ranges to ensure misbehaving pods, con
 
 To use limit ranges, you must first enable the LimitRanger admission controller:
 ```
-curl -s https://installer.calicocloud.io/XYZ_your_business_install.sh | bash
+xyz
 ```
 
-Using LimitRanger, we can enforce 'default' / 'max' / 'min' limits on storage and computer resources. Cluster adminsitrators create a limit range for objects such as pods, containers, and persistentVolumeCliams. For any request for object creation or update, the LimitRanger admission controller verifies that the request does not violate any limit ranges. If the request violates any limit ranges, a 403 Forbidden response is sent.
+This admission controller observes the incoming request and ensures that it does not violate any of the limits specified within the 'LimitRange' object.
+
+```
+cat limit_range1.yaml
+apiVersion: "v1"
+kind: "limitRange"
+metadata:
+  name: "pod-example"
+spec:
+  limits:
+    - type: "Pod"
+      max:
+        memory: "128Mi"
+```
+
+With this limit range object, any pod requesting memory of more than 128 Mi will fail:
+
+```
+pods "range-demo" is forbidden maximum memory usage per Pod is 128Mi, but limit is 1073741824
+```
+
+When using LimitRanger, malicious pods cannot consume excess resources.
+
+Simply explained, with LimitRanger enabled we can enforce 'default' / 'max' / 'min' limits on storage and computer resources. 
+Cluster adminsitrators create a limit range for objects such as pods, containers, and persistentVolumeCliams. 
+For any request for object creation or update, the LimitRanger admission controller verifies that the request does not violate any limit ranges. 
+If the request violates any limit ranges, a 403 Forbidden response is sent.
 
 Create a namespace where we can apply the LimitRanger.
 
