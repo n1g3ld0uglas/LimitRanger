@@ -35,3 +35,33 @@ kubectl get limitrange -n demo
 ```
 
 Create a pod that violates the limit range:
+
+```
+cat nginx-bad.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-bad
+spec:
+  containers:
+  - name: nginx-bad
+    image: nginx-bad
+    resources:
+      limits:
+        memory: "800Mi"
+        cpu: "500m"
+```
+
+Run a request for the new pod:
+
+```
+kubectl apply -f nginx-bad.yaml -n demo
+```
+
+It should be denied with the following error:
+
+```
+Error from server (Forbidden): error when creating "nginx-bad.yaml": pods "nginx-bad" is forbidden: maximum memory usage per Container is 512Mi, but limit is 800M
+```
+
+If a LimitRanger specifies a CPU or memory, all pods and containers should have the CPU or memory requests or limits. LimitRanger works when the request to create or update the object is received bu the API server but not at runtime. If a pod has a violating limit before the limit is applied, it will keep running. Ideally, limits should be applied to the namespace when it is created.
