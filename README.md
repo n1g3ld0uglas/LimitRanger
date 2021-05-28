@@ -3,7 +3,7 @@ Cluster administrators can leverage limit ranges to ensure misbehaving pods, con
 
 To use limit ranges, you must first enable the LimitRanger admission controller:
 ```
-xyz
+ps aux | grep kube-api
 ```
 
 This admission controller observes the incoming request and ensures that it does not violate any of the limits specified within the 'LimitRange' object.
@@ -91,3 +91,48 @@ Error from server (Forbidden): error when creating "nginx-bad.yaml": pods "nginx
 ```
 
 If a LimitRanger specifies a CPU or memory, all pods and containers should have the CPU or memory requests or limits. LimitRanger works when the request to create or update the object is received bu the API server but not at runtime. If a pod has a violating limit before the limit is applied, it will keep running. Ideally, limits should be applied to the namespace when it is created.
+
+
+Let's create a new namespace example
+
+```
+kubectl create namespace cpu-LimitRange
+```
+
+Here's a new configuration file for our LimitRange:
+
+```
+cat << EOF > cpu-limit.yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cpu-min-max-demo
+spec:
+  limits:
+  - max:
+      cpu: "800m"
+    min:
+      cpu: "200m"
+    type: Container
+EOF    
+```
+
+```
+kubectl apply -f cpu-limit.yaml
+```
+
+View detailed information about the LimitRange:
+
+```
+kubectl get limitrange cpu-min-max-demo --output=yaml --namespace=cpu-LimitRange
+```
+
+The output shows the minimum and maximum CPU constraints as expected. 
+But notice that even though you didn't specify default values in the configuration file for the LimitRange, they were created automatically.
+
+Now whenever a Container is created in the constraints-cpu-example namespace, Kubernetes performs these steps:
+
+- If the Container does not specify its own CPU request and limit, assign the default CPU request and limit to the Container.
+- Verify that the Container specifies a CPU request that is greater than or equal to 200 millicpu.
+- Verify that the Container specifies a CPU limit that is less than or equal to 800 millicpu.
+
